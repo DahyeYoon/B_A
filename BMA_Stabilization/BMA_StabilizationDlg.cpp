@@ -1822,7 +1822,7 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 			fprintf(fp, "GMV(%d, %d)\n", shiftWidth, shiftHeight);
 
 
-			fprintf(fp, "사용된 블록의 개수 : %d\n", usingBlock);
+			//fprintf(fp, "사용된 블록의 개수 : %d\n", usingBlock);
 		
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
