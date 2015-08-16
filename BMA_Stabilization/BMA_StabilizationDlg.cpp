@@ -24,6 +24,9 @@
 FILE *fp = fopen("c:\\RESULT\\Shift_Width.txt", "wt");
 FILE *fp2 = fopen("c:\\RESULT\\Shift_Hight.txt", "wt");
 FILE *fp3 = fopen("c:\\RESULT\\Motion_Vector.txt", "wt");
+FILE *fp4 = fopen("c:\\RESULT\\pixel_differ.txt", "wt");
+FILE *fp5 = fopen("c:\\RESULT\\blocknum.txt", "wt");
+FILE *fp6 = fopen("c:\\RESULT\\HW.txt", "wt");
 
 int frameCount = 0;
 int stabilizationCount = 0;
@@ -46,32 +49,10 @@ IplImage* currentImage;
 IplImage* stabilizationImage;
 //IplImage* slidingImage;
 
+IplImage* reference[12];
 
-IplImage* reference1;
-IplImage* reference2;
-IplImage* reference3;
-IplImage* reference4;
-IplImage* reference5;
-IplImage* reference6;
-IplImage* reference7;
-IplImage* reference8;
-IplImage* reference9;
-IplImage* reference10;
-IplImage* reference11;
-IplImage* reference12;
 
-IplImage* current1;
-IplImage* current2;
-IplImage* current3;
-IplImage* current4;
-IplImage* current5;
-IplImage* current6;
-IplImage* current7;
-IplImage* current8;
-IplImage* current9;
-IplImage* current10;
-IplImage* current11;
-IplImage* current12;
+IplImage* current[12];
 
 
 
@@ -393,6 +374,8 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 		int pixelDiff = 0;
 		int accReferPixel = 0;
 		int accCurPixel = 0;
+		int cnt = 0;
+		int index = 0;
 
 		uchar *cannyData = 0;
 		int white = 0, black = 0;
@@ -400,98 +383,11 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-		for (int i = 56, p = 1; p <= 64; i++, p++)                      //높이
+		
+		
+		
+		for (int k = 0; k < 12; k++)
 		{
-			for (int j = 57, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j]; //pixel 합
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);//MAD:MAD가 최소일 때 (i,j)가 local motion vector
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference1 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(25, 24, referenceBlockSize, referenceBlockSize));//관심 block영역 설정.rect(x,y,width,height)
-			cvCopyImage(referenceGrayImage, reference1);
-
-			current1 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(57, 56, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current1);
-
-			cannyImage = cvCreateImage(cvGetSize(current1), IPL_DEPTH_8U, 1);
-			cvCanny(current1, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-			if (white >= 0)
-			{
-				currentData = (uchar *)current1->imageData;
-				referenceData = (uchar *)reference1->imageData;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-
-						}
-					}
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference1);
-			cvReleaseImage(&current1);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 		pixelDiff = 0;
 		accReferPixel = 0;
@@ -503,33 +399,79 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 
 		referCmp = (uchar *)referenceGrayImage->imageData;
 		curCmp = (uchar *)currentGrayImage->imageData;
+		
+		
+		int H ;
+		int W ;
+		int refcox ;
+		int refcoy;
+		int curcox ;
+		int curcoy;
+		
+		/*H = 56;
+		W = 57;
+		refcox = 25;
+		refcoy = 24;
+		curcox = 57;
+		curcoy = 56;
+		cnt = 0;*/
 
-		for (int i = 56, p = 1; p <= 64; i++, p++)                      //높이
+		if (cnt >= 4 && cnt!=0){
+			H = H + 152;
+			W = 57;
+			refcoy = refcoy + 152;
+			refcox = 25;
+			curcoy = curcoy + 152;
+			curcox = 57;
+			cnt = 1;
+		}
+		else if(cnt<4 && cnt!=0){
+			W = W + 153;
+			refcox = refcox + 153;
+			curcox = curcox + 153;
+			cnt++;
+		}
+		else if (cnt == 0 && index==0){
+			
+			H = 56;
+			W = 57;
+			refcox = 25;
+			refcoy = 24;
+			curcox = 57;
+			curcoy = 56;
+			cnt++;
+		
+		}
+	
+	
+
+
+		for (int i = H, p = 1; p <= 64; i++, p++)                      //높이
 		{
-			for (int j = 210, q = 1; q <= 64; j++, q++)                   //너비
+			for (int j = W, q = 1; q <= 64; j++, q++)                   //너비
 			{
 				accReferPixel = accReferPixel + referCmp[i*width + j];
 				accCurPixel = accCurPixel + curCmp[i*width + j];
 
 				//pixelDiff =  pixelDiff + abs((curCmp[i*width+j] - referCmp[i*width+j]));
-
 			}
 		}
 		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
+		fprintf(fp4, "pixel diff : %d\n", pixelDiff);
+		fprintf(fp6, "H,W,count,index: %d,%d,%d,%d \n", H, W,cnt,index);
+	
 		if (pixelDiff >= 0)
 		{
-			reference2 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(178, 24, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference2);
+			reference[index] = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
+			cvSetImageROI(referenceGrayImage, cvRect(refcox, refcoy, referenceBlockSize, referenceBlockSize));
+			cvCopyImage(referenceGrayImage, reference[index]);
 
-			current2 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(210, 56, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current2);
+			current[index] = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
+			cvSetImageROI(currentGrayImage, cvRect(curcox, curcoy, currentBlockSize, currentBlockSize));
+			cvCopyImage(currentGrayImage, current[index]);
 
-			cannyImage = cvCreateImage(cvGetSize(current2), IPL_DEPTH_8U, 1);
-			cvCanny(current2, cannyImage, 100, 150, 3);
+			cannyImage = cvCreateImage(cvGetSize(current[index]), IPL_DEPTH_8U, 1);
+			cvCanny(current[index], cannyImage, 100, 150, 3);
 			cannyData = (uchar *)cannyImage->imageData;
 
 			for (int i = 0; i<currentBlockSize; i++)
@@ -549,8 +491,8 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 
 			if (white >= 0)
 			{
-				currentData = (uchar *)current2->imageData;
-				referenceData = (uchar *)reference2->imageData;
+				currentData = (uchar *)current[index]->imageData;
+				referenceData = (uchar *)reference[index]->imageData;
 
 				BMDiffer = 0;
 				referHeightIni = 0, referWidthIni = 0;
@@ -592,1110 +534,25 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 					{
 						referWidthIni++;
 					}
+					
 				}
+				
 				usingBlock++;
 			}
-			cvReleaseImage(&reference2);
-			cvReleaseImage(&current2);
+			cvReleaseImage(&reference[index]);
+			cvReleaseImage(&current[index]);
 			cvReleaseImage(&cannyImage);
 			cvResetImageROI(referenceGrayImage);
 			cvResetImageROI(currentGrayImage);
 
 		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 56, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 363, q = 1; q <= 64; j++, q++)                   //너비
-			{
-
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-				//pixelDiff =  pixelDiff + abs((curCmp[i*width+j] - referCmp[i*width+j]));
-
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-		if (pixelDiff >= 0)
-		{
-			reference3 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(331, 24, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference3);
-
-			current3 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(363, 56, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current3);
-
-			cannyImage = cvCreateImage(cvGetSize(current3), IPL_DEPTH_8U, 1);
-			cvCanny(current3, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current3->imageData;
-				referenceData = (uchar *)reference3->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference3);
-			cvReleaseImage(&current3);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
+		index++;
 		}
 
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 56, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 516, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference4 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(484, 24, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference4);
-
-			current4 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(516, 56, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current4);
-
-			cannyImage = cvCreateImage(cvGetSize(current4), IPL_DEPTH_8U, 1);
-			cvCanny(current4, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current4->imageData;
-				referenceData = (uchar *)reference4->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-
-						}
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-
-				usingBlock++;
-			}
-			cvReleaseImage(&reference4);
-			cvReleaseImage(&current4);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 208, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 57, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference5 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(25, 176, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference5);
-
-			current5 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(57, 208, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current5);
-
-			cannyImage = cvCreateImage(cvGetSize(current5), IPL_DEPTH_8U, 1);
-			cvCanny(current5, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current5->imageData;
-				referenceData = (uchar *)reference5->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference5);
-			cvReleaseImage(&current5);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 208, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 210, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference6 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(178, 176, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference6);
-
-			current6 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(210, 208, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current6);
-
-			cannyImage = cvCreateImage(cvGetSize(current6), IPL_DEPTH_8U, 1);
-			cvCanny(current6, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current6->imageData;
-				referenceData = (uchar *)reference6->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-
-						}
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference6);
-			cvReleaseImage(&current6);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 208, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 363, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference7 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(331, 176, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference7);
-
-			current7 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(363, 208, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current7);
-
-			cannyImage = cvCreateImage(cvGetSize(current7), IPL_DEPTH_8U, 1);
-			cvCanny(current7, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current7->imageData;
-				referenceData = (uchar *)reference7->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-
-						}
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference7);
-			cvReleaseImage(&current7);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 208, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 516, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference8 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(484, 176, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference8);
-
-			current8 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(516, 208, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current8);
-
-			cannyImage = cvCreateImage(cvGetSize(current8), IPL_DEPTH_8U, 1);
-			cvCanny(current8, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current8->imageData;
-				referenceData = (uchar *)reference8->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference8);
-			cvReleaseImage(&current8);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 360, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 57, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference9 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(25, 328, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference9);
-
-			current9 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(57, 360, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current9);
-
-			cannyImage = cvCreateImage(cvGetSize(current9), IPL_DEPTH_8U, 1);
-			cvCanny(current9, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current9->imageData;
-				referenceData = (uchar *)reference9->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference9);
-			cvReleaseImage(&current9);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 360, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 210, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference10 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(178, 328, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference10);
-
-			current10 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(210, 360, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current10);
-
-			cannyImage = cvCreateImage(cvGetSize(current10), IPL_DEPTH_8U, 1);
-			cvCanny(current10, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current10->imageData;
-				referenceData = (uchar *)reference10->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&current10);
-			cvReleaseImage(&reference10);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 360, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 363, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference11 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels); \
-				cvSetImageROI(referenceGrayImage, cvRect(331, 328, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference11);
-
-			current11 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(363, 360, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current11);
-
-			cannyImage = cvCreateImage(cvGetSize(current11), IPL_DEPTH_8U, 1);
-			cvCanny(current11, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current11->imageData;
-				referenceData = (uchar *)reference11->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference11);
-			cvReleaseImage(&current11);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
-
-		//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		pixelDiff = 0;
-		accReferPixel = 0;
-		accCurPixel = 0;
-
-		cannyImage = 0;
-		white = 0;
-		black = 0;
-
-		referCmp = (uchar *)referenceGrayImage->imageData;
-		curCmp = (uchar *)currentGrayImage->imageData;
-
-		for (int i = 360, p = 1; p <= 64; i++, p++)                      //높이
-		{
-			for (int j = 516, q = 1; q <= 64; j++, q++)                   //너비
-			{
-				accReferPixel = accReferPixel + referCmp[i*width + j];
-				accCurPixel = accCurPixel + curCmp[i*width + j];
-			}
-		}
-		pixelDiff = (abs(accReferPixel - accCurPixel)) / (64 * 64);;
-		//fprintf(fp, "pixel diff : %d\n", pixelDiff);
-
-		if (pixelDiff >= 0)
-		{
-			reference12 = cvCreateImage(cvSize(referenceBlockSize, referenceBlockSize), referenceGrayImage->depth, referenceGrayImage->nChannels);
-			cvSetImageROI(referenceGrayImage, cvRect(484, 328, referenceBlockSize, referenceBlockSize));
-			cvCopyImage(referenceGrayImage, reference12);
-
-			current12 = cvCreateImage(cvSize(currentBlockSize, currentBlockSize), currentGrayImage->depth, currentGrayImage->nChannels);
-			cvSetImageROI(currentGrayImage, cvRect(516, 360, currentBlockSize, currentBlockSize));
-			cvCopyImage(currentGrayImage, current12);
-
-			cannyImage = cvCreateImage(cvGetSize(current12), IPL_DEPTH_8U, 1);
-			cvCanny(current12, cannyImage, 100, 150, 3);
-			cannyData = (uchar *)cannyImage->imageData;
-
-			for (int i = 0; i<currentBlockSize; i++)
-			{
-				for (int j = 0; j<currentBlockSize; j++)
-				{
-					if (cannyData[i*currentBlockSize + j] > 127)
-					{
-						white++;
-					}
-					else if (cannyData[i*currentBlockSize + j] <= 127)
-					{
-						black++;
-					}
-				}
-			}
-
-			if (white >= 0)
-			{
-				currentData = (uchar *)current12->imageData;
-				referenceData = (uchar *)reference12->imageData;
-
-				BMDiffer = 0;
-				referHeightIni = 0, referWidthIni = 0;
-				firFlag = 0;
-				saveDiffer = 0;
-
-				for (int counting = 1; counting <= iteration; counting++)
-				{
-					BMDiffer = 0;
-					for (int curHeight = 0, referHeight = referHeightIni; curHeight <= (currentBlockSize - 1); curHeight++, referHeight++)                      //높이
-					{
-						for (int curWidth = 0, referWidth = referWidthIni; curWidth <= (currentBlockSize - 1); curWidth++, referWidth++)                   //너비
-						{
-							BMDiffer = BMDiffer + ((referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth])
-								* (referenceData[referHeight*referenceWidth + referWidth] - currentData[curHeight*currentWidth + curWidth]));
-						}
-					}
-
-					if (firFlag == 0)
-					{
-						saveDiffer = BMDiffer;
-					}
-					else
-					{
-						if (saveDiffer > BMDiffer)
-						{
-							saveDiffer = BMDiffer;
-							lmvW[usingBlock] = referWidthIni - ((referenceBlockSize - currentBlockSize) / 2);
-							lmvH[usingBlock] = referHeightIni - ((referenceBlockSize - currentBlockSize) / 2);
-						}
-
-					}
-					firFlag++;
-					if (counting % ((referenceBlockSize - currentBlockSize) + 1) == 0)
-					{
-						referHeightIni++;
-						referWidthIni = 0;
-					}
-					else
-					{
-						referWidthIni++;
-					}
-				}
-				usingBlock++;
-			}
-			cvReleaseImage(&reference12);
-			cvReleaseImage(&current12);
-			cvReleaseImage(&cannyImage);
-			cvResetImageROI(referenceGrayImage);
-			cvResetImageROI(currentGrayImage);
-		}
 		frameCount++;
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		int resultWidth = 0;
 		int resultHeigh = 0;
 		int shiftWidth = 0;
@@ -1734,8 +591,8 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 
 			resultWidth = 0;
 			resultHeigh = 0;
-			/*
-			for(int i=1 ; i < (usingBlock-1) ; i++)
+			
+			/*for(int i=1 ; i < (usingBlock-1) ; i++)
 			{
 			resultWidth = resultWidth + lmvW[i];
 			}
@@ -1745,8 +602,8 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 			resultHeigh = resultHeigh + lmvH[i];
 			}
 			shiftWidth= resultWidth / (usingBlock - 2);
-			shiftHeight = resultHeigh / (usingBlock - 2);*/
-
+			shiftHeight = resultHeigh / (usingBlock - 2);
+*/
 			for (int i = 0; i < (usingBlock); i++)
 			{
 				resultWidth = resultWidth + lmvW[i];
@@ -1756,7 +613,7 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 			{
 				resultHeigh = resultHeigh + lmvH[i];
 			}
-			shiftWidth = resultWidth / (usingBlock);
+			shiftWidth = resultWidth / (usingBlock); //global motion vector
 			shiftHeight = resultHeigh / (usingBlock);
 
 
@@ -1779,50 +636,52 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 		fprintf(fp, "%d\n", shiftWidth);
 		fprintf(fp2, "%d\n", shiftHeight);
 		fprintf(fp3, "Motion Vector : (%d, %d)", shiftWidth, shiftHeight);
-		fprintf(fp3, "frame%d ~ frame%d 완료\n\n", frameNum, frameNum + 1);
+		fprintf(fp3, "frame%d ~ frame%d 완료\n\n", frameNum, frameNum+1);
 		frameNum++;
+		
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		
-		int accShiftWidth = 0;
-		int accShiftHeight = 0;
-		int averageGMVH;
-		int averageGMVW;
+		//
+		//int accShiftWidth = 0;
+		//int accShiftHeight = 0;
+		//int averageGMVH;
+		//int averageGMVW;
 
-		if(gmvCount <= 2)
-		{
-		gmvWidth[gmvCount] = shiftWidth;
-		gmvHeight[gmvCount] = shiftHeight;
-		gmvCount++;
-		}
-		else
-		{
-		for(int i = 0 ; i<=1 ; i++)
-		{
-		gmvWidth[i] = gmvWidth[i+1];
-		gmvHeight[i] = gmvHeight[i+1];
-		}
-		gmvWidth[2] = shiftWidth;
-		gmvHeight[2] = shiftHeight;
-		}
+		///*if(gmvCount <= 2)*/
+		///*{*/
+		//gmvWidth[gmvCount] = shiftWidth;
+		//gmvHeight[gmvCount] = shiftHeight;
+		//gmvCount++;
+		///*}*/
+		///*else
+		//{
+		//for(int i = 0 ; i<=1 ; i++)
+		//{
+		//gmvWidth[i] = gmvWidth[i+1];
+		//gmvHeight[i] = gmvHeight[i+1];
+		//}
+		//gmvWidth[2] = shiftWidth;
+		//gmvHeight[2] = shiftHeight;
+		//}*/
 
-		for(int i = 0 ; i <= 2 ; i++)
-		{
-		accShiftWidth = accShiftWidth + gmvWidth[i];
-		accShiftHeight = accShiftHeight + gmvHeight[i];
-		}
-		averageGMVW = accShiftWidth / gmvCount;
-		averageGMVH = accShiftHeight / gmvCount;
+		//for(int i = 0 ; i <= 2 ; i++)
+		//{
+		//accShiftWidth = accShiftWidth + gmvWidth[i];
+		//accShiftHeight = accShiftHeight + gmvHeight[i];
+		//}
+		//averageGMVW = accShiftWidth / gmvCount;
+		//averageGMVH = accShiftHeight / gmvCount;
 
-		//		shiftWidth = averageGMVW;
-		//	shiftHeight = averageGMVH;
+		//	//shiftWidth = averageGMVW;
+		//	//shiftHeight = averageGMVH;
 
-		shiftWidth = averageGMVW - shiftWidth;
-		shiftHeight = averageGMVH - shiftHeight;
+		//shiftWidth = averageGMVW - shiftWidth;
+		//shiftHeight = averageGMVH - shiftHeight;
 
-			fprintf(fp, "GMV(%d, %d)\n", shiftWidth, shiftHeight);
+		//	fprintf(fp, "GMV(%d, %d)\n", shiftWidth, shiftHeight);
 
 
-			//fprintf(fp, "사용된 블록의 개수 : %d\n", usingBlock);
+			fprintf(fp5, "사용된 블록의 개수 : %d\n", usingBlock);
 		
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -1965,4 +824,9 @@ void CBMA_StabilizationDlg::OnBnClickedBUTTON_RUN()
 	fclose(fp);
 	fclose(fp2);
 	fclose(fp3);
+	fclose(fp4);
+	fclose(fp5);
+	fclose(fp6);
 }
+
+
